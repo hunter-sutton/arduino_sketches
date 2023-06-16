@@ -1,3 +1,9 @@
+/**
+ *
+ * From Adafruit BLE Code
+ *
+**/
+
 #include <string.h>
 #include <Arduino.h>
 #include <bluefruit.h>
