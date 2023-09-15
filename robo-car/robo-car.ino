@@ -189,7 +189,7 @@ void loop(void) {
                 Serial.println(rssi);
             }
 
-            Serial.println("Got here");
+            // Serial.println("Got here");
         }
     }
 }
