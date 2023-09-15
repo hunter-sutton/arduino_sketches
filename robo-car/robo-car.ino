@@ -8,9 +8,6 @@
 #include <ble_gap.h>
 #include <math.h>
 
-// OTA DFU service
-// BLEDfu bledfu;
-
 // Uart over BLE service
 BLEUart bleuart;
 
@@ -36,6 +33,41 @@ enum DeviceMode {
 
 DeviceMode device_mode = DPAD_CONTROL;
 
+void stopMotors() {
+    digitalWrite(M1_1, LOW);
+    digitalWrite(M1_2, LOW);
+    digitalWrite(M2_1, LOW);
+    digitalWrite(M2_2, LOW);
+}
+
+void goForward() {
+    digitalWrite(M1_1, HIGH);
+    digitalWrite(M1_2, LOW);
+    digitalWrite(M2_1, HIGH);
+    digitalWrite(M2_2, LOW);
+}
+
+void goBackward() {
+    digitalWrite(M1_1, LOW);
+    digitalWrite(M1_2, HIGH);
+    digitalWrite(M2_1, LOW);
+    digitalWrite(M2_2, HIGH);
+}
+
+void turnLeft() {
+    digitalWrite(M1_1, LOW);
+    digitalWrite(M1_2, HIGH);
+    digitalWrite(M2_1, HIGH);
+    digitalWrite(M2_2, LOW);
+}
+
+void turnRight() {
+    digitalWrite(M1_1, HIGH);
+    digitalWrite(M1_2, LOW);
+    digitalWrite(M2_1, LOW);
+    digitalWrite(M2_2, HIGH);
+}
+
 void setup(void) {
     Serial.begin(115200);
     while (!Serial) delay(10);  // for nrf52840 with native usb
@@ -45,9 +77,6 @@ void setup(void) {
 
     Bluefruit.begin();
     Bluefruit.setTxPower(4);  // Check bluefruit.h for supported values
-
-    // To be consistent OTA DFU should be added first if it exists
-    // bledfu.begin();
 
     // Configure and start the BLE Uart service
     bleuart.begin();
@@ -62,10 +91,7 @@ void setup(void) {
     pinMode(M1_2, OUTPUT);
     pinMode(M2_1, OUTPUT);
     pinMode(M2_2, OUTPUT);
-    digitalWrite(M1_1, LOW);
-    digitalWrite(M1_2, LOW);
-    digitalWrite(M2_1, LOW);
-    digitalWrite(M2_2, LOW);
+    stopMotors();
 }
 
 void startAdv(void) {
@@ -85,9 +111,6 @@ void startAdv(void) {
     * - Interval:  fast mode = 20 ms, slow mode = 152.5 ms
     * - Timeout for fast mode is 30 seconds
     * - Start(timeout) with timeout = 0 will advertise forever (until connected)
-    * 
-    * For recommended advertising interval
-    * https://developer.apple.com/library/content/qa/qa1931/_index.html   
     */
     Bluefruit.Advertising.restartOnDisconnect(true);
     Bluefruit.Advertising.setInterval(32, 244);  // in unit of 0.625 ms
@@ -117,10 +140,7 @@ void loop(void) {
             Serial.println("Switched to " + mode_name + "mode");
 
             // reset motors
-            digitalWrite(M1_1, LOW);
-            digitalWrite(M1_2, LOW);
-            digitalWrite(M2_1, LOW);
-            digitalWrite(M2_2, LOW);
+            stopMotors();
 
             return;  // skip the button processing steps
         }
@@ -129,49 +149,39 @@ void loop(void) {
             if (pressed) {
                 Serial.println(" pressed");
 
-                if (buttnum == 5) {
-                    // forward
+                if (buttnum == 5) { // forward
+
                     Serial.println("Forward");
-                    digitalWrite(M1_1, HIGH);
-                    digitalWrite(M1_2, LOW);
-                    digitalWrite(M2_1, HIGH);
-                    digitalWrite(M2_2, LOW);
+                    goForward();
                     digitalWrite(LED_BUILTIN, HIGH);
-                } else if (buttnum == 7) {
-                    // left
-                    Serial.println("Left");
-                    digitalWrite(M1_1, LOW);
-                    digitalWrite(M1_2, HIGH);
-                    digitalWrite(M2_1, HIGH);
-                    digitalWrite(M2_2, LOW);
+
+                } else if (buttnum == 7) { // left
+
+                    Serial.println("Left");    
+                    turnLeft();
                     digitalWrite(LED_BUILTIN, HIGH);
-                } else if (buttnum == 8) {
-                    // right
-                    Serial.println("Right");
-                    digitalWrite(M1_1, HIGH);
-                    digitalWrite(M1_2, LOW);
-                    digitalWrite(M2_1, LOW);
-                    digitalWrite(M2_2, HIGH);
+
+                } else if (buttnum == 8) { // right
+
+                    Serial.println("Right");    
+                    turnRight();
                     digitalWrite(LED_BUILTIN, HIGH);
-                } else if (buttnum == 6) {
-                    // reverse
-                    Serial.println("Reverse");
-                    digitalWrite(M1_1, LOW);
-                    digitalWrite(M1_2, HIGH);
-                    digitalWrite(M2_1, LOW);
-                    digitalWrite(M2_2, HIGH);
+
+                } else if (buttnum == 6) { // reverse
+
+                    Serial.println("Reverse");    
+                    goBackward();
                     digitalWrite(LED_BUILTIN, HIGH);
+
                 }
-            } else {
+            } else { // reset (undo action of button press)
+
                 Serial.println(" released");
-                // reset what was done above
-                digitalWrite(M1_1, LOW);
-                digitalWrite(M1_2, LOW);
-                digitalWrite(M2_1, LOW);
-                digitalWrite(M2_2, LOW);
+                stopMotors();
                 digitalWrite(LED_BUILTIN, LOW);
+
             }
-        } else if (device_mode == GRADIENT_ASCENT) {
+        } else if (device_mode == GRADIENT_ASCENT) { // NOT WORKING YET
             // gradient ascent
             Serial.println("Gradient ascent mode");
 
@@ -182,14 +192,12 @@ void loop(void) {
 
                 uint16_t connHandle = Bluefruit.connHandle();
 
-                // Serial.println(connHandle);
-
                 int8_t rssi = Bluefruit.Connection(connHandle)->getRssi();
                 Serial.print("Rssi: ");
                 Serial.println(rssi);
             }
 
-            // Serial.println("Got here");
+            Serial.println("Got here");
         }
     }
 }
