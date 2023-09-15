@@ -5,10 +5,11 @@
 **/
 
 #include <bluefruit.h>
+#include <ble_gap.h>
 #include <math.h>
 
 // OTA DFU service
-BLEDfu bledfu;
+// BLEDfu bledfu;
 
 // Uart over BLE service
 BLEUart bleuart;
@@ -35,13 +36,6 @@ enum DeviceMode {
 
 DeviceMode device_mode = DPAD_CONTROL;
 
-typedef struct node_record_s {
-    uint8_t addr[6];
-    int8_t rssi;
-    uint32_t timestamp;
-    int8_t reserved;
-} node_record_t;
-
 void setup(void) {
     Serial.begin(115200);
     while (!Serial) delay(10);  // for nrf52840 with native usb
@@ -53,7 +47,7 @@ void setup(void) {
     Bluefruit.setTxPower(4);  // Check bluefruit.h for supported values
 
     // To be consistent OTA DFU should be added first if it exists
-    bledfu.begin();
+    // bledfu.begin();
 
     // Configure and start the BLE Uart service
     bleuart.begin();
@@ -109,9 +103,6 @@ void loop(void) {
 
     // Got a packet!
     printHex(packetbuffer, len);
-
-    // ble_gap_evt_adv_report_t* report;
-    // Serial.println(report->rssi);
 
     // Buttons
     if (packetbuffer[1] == 'B') {
@@ -182,7 +173,23 @@ void loop(void) {
             }
         } else if (device_mode == GRADIENT_ASCENT) {
             // gradient ascent
-            Serial.println("Gradent ascent mode");
-        }        
+            Serial.println("Gradient ascent mode");
+
+            bool connected = Bluefruit.connected();
+
+            if (connected) {
+                Serial.println("Connected");
+
+                uint16_t connHandle = Bluefruit.connHandle();
+
+                // Serial.println(connHandle);
+
+                int8_t rssi = Bluefruit.Connection(connHandle)->getRssi();
+                Serial.print("Rssi: ");
+                Serial.println(rssi);
+            }
+
+            Serial.println("Got here");
+        }
     }
 }
